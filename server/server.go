@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/ha/doozerd/consensus"
 	"github.com/ha/doozerd/store"
-	"log"
+	"github.com/mreiferson/go-simplelog"
 	"net"
 	"syscall"
 )
@@ -21,7 +21,7 @@ func ListenAndServe(l net.Listener, canWrite chan bool, st *store.Store, p conse
 			if e, ok := err.(*net.OpError); ok && e.Err == syscall.EINVAL {
 				break
 			}
-			log.Println(err)
+			simplelog.Error(err.Error())
 			continue
 		}
 

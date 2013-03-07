@@ -4,7 +4,7 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 	"container/heap"
 	"github.com/ha/doozerd/store"
-	"log"
+	"github.com/mreiferson/go-simplelog"
 	"math/rand"
 	"net"
 	"time"
@@ -35,7 +35,7 @@ func (r *run) quorum() int {
 
 func (r *run) update(p *packet, from int, ticks heap.Interface) {
 	if p.msg.Cmd != nil && *p.msg.Cmd == msg_TICK {
-		log.Printf("tick wasteful=%v", r.l.done)
+		simplelog.Debug("tick wasteful=%v", r.l.done)
 	}
 
 	m, tick := r.c.update(p, from)
@@ -44,7 +44,7 @@ func (r *run) update(p *packet, from int, ticks heap.Interface) {
 		r.ntick++
 		r.bound *= 2
 		t := rand.Int63n(r.bound + 1) // +1 because it panics if bound is 0.
-		log.Printf("sched tick=%d seqn=%d t=%d", r.ntick, r.seqn, t)
+		simplelog.Debug("sched tick=%d seqn=%d t=%d", r.ntick, r.seqn, t)
 		schedTrigger(ticks, r.seqn, time.Now().UnixNano(), t)
 	}
 
@@ -54,7 +54,7 @@ func (r *run) update(p *packet, from int, ticks heap.Interface) {
 	m, v, ok := r.l.update(p, from)
 	r.broadcast(m)
 	if ok {
-		log.Printf("learn seqn=%d", r.seqn)
+		simplelog.Debug("learn seqn=%d", r.seqn)
 		r.ops <- store.Op{r.seqn, string(v)}
 	}
 }

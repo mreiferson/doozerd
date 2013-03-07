@@ -1,7 +1,7 @@
 package peer
 
 import (
-	"log"
+	"github.com/mreiferson/go-simplelog"
 	"net"
 )
 
@@ -46,7 +46,7 @@ func (lv *liveness) check(t int64) {
 				times[i] = r
 				i++
 			} else {
-				log.Printf("shunning addr=%s", r.addr)
+				simplelog.Debug("shunning addr=%s", r.addr)
 				lv.shun <- r.addr.String()
 			}
 		}

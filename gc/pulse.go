@@ -3,7 +3,7 @@ package gc
 import (
 	"github.com/ha/doozerd/consensus"
 	"github.com/ha/doozerd/store"
-	"log"
+	"github.com/mreiferson/go-simplelog"
 	"strconv"
 	"time"
 )
@@ -18,7 +18,7 @@ func Pulse(node string, seqns <-chan int64, p consensus.Proposer, sleep int64) {
 
 		e := consensus.Set(p, path, []byte(strconv.FormatInt(seqn, 10)), store.Clobber)
 		if e.Err != nil {
-			log.Println(e.Err)
+			simplelog.Error(e.Err.Error())
 		}
 
 		time.Sleep(time.Duration(sleep))

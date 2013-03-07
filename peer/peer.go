@@ -8,8 +8,8 @@ import (
 	"github.com/ha/doozerd/server"
 	"github.com/ha/doozerd/store"
 	"github.com/ha/doozerd/web"
+	"github.com/mreiferson/go-simplelog"
 	"io"
-	"log"
 	"net"
 	"os"
 	"strings"
@@ -163,11 +163,11 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 		for p := range out {
 			n, err := udpConn.WriteTo(p.Data, p.Addr)
 			if err != nil {
-				log.Println(err)
+				simplelog.Error(err.Error())
 				continue
 			}
 			if n != len(p.Data) {
-				log.Println("packet len too long:", len(p.Data))
+				simplelog.Debug("packet len too long:", len(p.Data))
 				continue
 			}
 		}
@@ -189,11 +189,11 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 		buf := make([]byte, maxUDPLen)
 		n, addr, err := udpConn.ReadFromUDP(buf)
 		if err != nil && strings.Contains(err.Error(), "use of closed network connection") {
-			log.Printf("<<<< EXITING >>>>")
+			simplelog.Info("exiting")
 			return
 		}
 		if err != nil {
-			log.Println(err)
+			simplelog.Error(err.Error())
 			continue
 		}
 
@@ -215,7 +215,7 @@ func activate(st *store.Store, self string, c *doozer.Conn) int64 {
 		if rev != store.Dir && v[0] == "" {
 			seqn, err := c.Set(p, rev, []byte(self))
 			if err != nil {
-				log.Println(err)
+				simplelog.Error(err.Error())
 				continue
 			}
 
@@ -237,7 +237,7 @@ func activate(st *store.Store, self string, c *doozer.Conn) int64 {
 		if ev.IsSet() && ev.Body == "" {
 			seqn, err := c.Set(ev.Path, ev.Rev, []byte(self))
 			if err != nil {
-				log.Println(err)
+				simplelog.Error(err.Error())
 				continue
 			}
 			return seqn
@@ -289,8 +289,8 @@ func follow(st *store.Store, cl *doozer.Conn, rev int64, stop chan bool) {
 }
 
 type cloner struct {
-	ch chan<- store.Op
-	cl *doozer.Conn
+	ch       chan<- store.Op
+	cl       *doozer.Conn
 	storeRev int64
 }
 
@@ -312,7 +312,7 @@ func (c cloner) VisitFile(path string, f *doozer.FileInfo) {
 func setReady(p consensus.Proposer, self string) {
 	m, err := store.EncodeSet("/ctl/node/"+self+"/writable", "true", 0)
 	if err != nil {
-		log.Println(err)
+		simplelog.Error(err.Error())
 		return
 	}
 	p.Propose([]byte(m))

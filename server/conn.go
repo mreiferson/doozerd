@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"github.com/ha/doozerd/consensus"
 	"github.com/ha/doozerd/store"
+	"github.com/mreiferson/go-simplelog"
 	"io"
-	"log"
 	"sync"
 )
 
@@ -31,7 +31,7 @@ func (c *conn) serve() {
 		err := c.read(&t.req)
 		if err != nil {
 			if err != io.EOF {
-				log.Println(err)
+				simplelog.Error(err.Error())
 			}
 			return
 		}

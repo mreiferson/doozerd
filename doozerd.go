@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/ha/doozer"
 	"github.com/ha/doozerd/peer"
-	"log"
+	"github.com/mreiferson/go-simplelog"
 	"net"
 	"os"
 	"strconv"
@@ -39,6 +39,7 @@ var (
 	hi          = flag.Int64("hist", 2000, "length of history/revisions to keep")
 	certFile    = flag.String("tlscert", "", "TLS public certificate")
 	keyFile     = flag.String("tlskey", "", "TLS private key")
+	logLevel    = flag.String("logging", "info", "log level")
 )
 
 var (
@@ -78,8 +79,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.SetPrefix("DOOZER ")
-	log.SetFlags(log.Ldate | log.Lmicroseconds)
+	simplelog.SetLevel(*logLevel)
+	simplelog.Info("doozerd %s", peer.Version)
 
 	tsock, err := net.Listen("tcp", *laddr)
 	if err != nil {

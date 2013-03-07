@@ -4,7 +4,7 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 	"container/heap"
 	"github.com/ha/doozerd/store"
-	"log"
+	"github.com/mreiferson/go-simplelog"
 	"net"
 	"sort"
 	"time"
@@ -139,7 +139,8 @@ func (m *Manager) Run() {
 			if !ok {
 				return
 			}
-			log.Println("event", e)
+
+			simplelog.Debug("event %+v", e)
 
 			runCh, err = m.Store.Wait(store.Any, e.Seqn+1)
 			if err != nil {
@@ -148,9 +149,10 @@ func (m *Manager) Run() {
 
 			m.event(e)
 			m.Stats.TotalRuns++
-			log.Println("runs:", fmtRuns(m.run))
-			log.Println("avg tick delay:", avg(m.tick))
-			log.Println("avg fill delay:", avg(m.fill))
+
+			simplelog.Debug("runs: %s", fmtRuns(m.run))
+			simplelog.Debug("avg tick delay: %d", avg(m.tick))
+			simplelog.Debug("avg fill delay: %d", avg(m.fill))
 		case p := <-m.In:
 			if p1 := recvPacket(&m.packet, p); p1 != nil {
 				m.Stats.TotalRecv[*p1.msg.Cmd]++
@@ -168,7 +170,7 @@ func (m *Manager) Run() {
 func (m *Manager) pump() {
 	for len(m.packet) > 0 {
 		p := m.packet[0]
-		log.Printf("p.seqn=%d m.next=%d", *p.Seqn, m.next)
+		simplelog.Debug("p.seqn=%d m.next=%d", *p.Seqn, m.next)
 		if *p.Seqn >= m.next {
 			break
 		}
@@ -187,18 +189,18 @@ func (m *Manager) doTick(t int64) {
 	n := applyTriggers(&m.packet, &m.fill, t, fillTemplate)
 	m.Stats.TotalFills += int64(n)
 	if n > 0 {
-		log.Println("applied fills", n)
+		simplelog.Debug("applied fills %d", n)
 	}
 
 	n = applyTriggers(&m.packet, &m.tick, t, tickTemplate)
 	m.Stats.TotalTicks += int64(n)
 	if n > 0 {
-		log.Println("applied m.tick", n)
+		simplelog.Debug("applied m.tick %d", n)
 	}
 }
 
 func (m *Manager) propose(q heap.Interface, pr *Prop, t int64) {
-	log.Println("prop", pr)
+	simplelog.Debug("prop %+v", pr)
 	p := new(packet)
 	p.msg.Seqn = &pr.Seqn
 	p.msg.Cmd = propose
@@ -219,7 +221,7 @@ func sendLearn(out chan<- Packet, p *packet, st *store.Store) {
 		ch, err := st.Wait(store.Any, *p.Seqn)
 
 		if err == store.ErrTooLate {
-			log.Println(err)
+			simplelog.Error(err.Error())
 		} else {
 			e := <-ch
 			m := msg{
@@ -239,12 +241,12 @@ func recvPacket(q heap.Interface, P Packet) (p *packet) {
 
 	err := proto.Unmarshal(P.Data, &p.msg)
 	if err != nil {
-		log.Println(err)
+		simplelog.Error(err.Error())
 		return nil
 	}
 
 	if p.msg.Seqn == nil || p.msg.Cmd == nil {
-		log.Printf("discarding %#v", p)
+		simplelog.Debug("discarding %#v", p)
 		return nil
 	}
 
@@ -279,7 +281,7 @@ func applyTriggers(ps *packets, ticks *triggers, now int64, tpl *msg) (n int) {
 		p := new(packet)
 		p.msg = *tpl
 		p.msg.Seqn = &tt.n
-		log.Println("applying", *p.Seqn, msg_Cmd_name[int32(*p.Cmd)])
+		simplelog.Debug("applying %d %s", *p.Seqn, msg_Cmd_name[int32(*p.Cmd)])
 		heap.Push(ps, p)
 		n++
 	}
@@ -288,7 +290,7 @@ func applyTriggers(ps *packets, ticks *triggers, now int64, tpl *msg) (n int) {
 
 func (m *Manager) event(e store.Event) {
 	delete(m.run, e.Seqn)
-	log.Printf("del run %d", e.Seqn)
+	simplelog.Debug("del run %d", e.Seqn)
 	m.addRun(e)
 }
 
@@ -311,10 +313,10 @@ func (m *Manager) addRun(e store.Event) (r *run) {
 	r.l.init(len(r.cals), int64(r.quorum()))
 	m.run[r.seqn] = r
 	if r.isLeader(m.Self) {
-		log.Printf("pseqn %d", r.seqn)
+		simplelog.Debug("pseqn %d", r.seqn)
 		m.PSeqn <- r.seqn
 	}
-	log.Printf("add run %d", r.seqn)
+	simplelog.Debug("add run %d", r.seqn)
 	m.next = r.seqn + 1
 	return r
 }
@@ -346,7 +348,7 @@ func getAddrs(g store.Getter, cals []string) (a []*net.UDPAddr) {
 		s := store.GetString(g, "/ctl/node/"+id+"/addr")
 		a[i], err = net.ResolveUDPAddr("udp", s)
 		if err != nil {
-			log.Println(err)
+			simplelog.Error(err.Error())
 		} else {
 			i++
 		}

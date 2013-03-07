@@ -3,7 +3,7 @@ package member
 import (
 	"github.com/ha/doozerd/consensus"
 	"github.com/ha/doozerd/store"
-	"log"
+	"github.com/mreiferson/go-simplelog"
 )
 
 var (
@@ -44,7 +44,7 @@ func clearSlot(p consensus.Proposer, g store.Getter, name string) {
 func removeInfo(p consensus.Proposer, g store.Getter, name string) {
 	glob, err := store.CompileGlob("/ctl/node/" + name + "/**")
 	if err != nil {
-		log.Println(err)
+		simplelog.Error(err.Error())
 		return
 	}
 	store.Walk(g, glob, func(path, _ string, rev int64) bool {

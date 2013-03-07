@@ -4,8 +4,8 @@ import (
 	"code.google.com/p/go.net/websocket"
 	"encoding/json"
 	"github.com/ha/doozerd/store"
+	"github.com/mreiferson/go-simplelog"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"runtime"
@@ -53,12 +53,12 @@ func send(ws *websocket.Conn, path string, evs <-chan store.Event) {
 		ev.Path = ev.Path[l:]
 		b, err := json.Marshal(ev)
 		if err != nil {
-			log.Println(err)
+			simplelog.Error(err.Error())
 			return
 		}
 		_, err = ws.Write(b)
 		if err != nil {
-			log.Println(err)
+			simplelog.Error(err.Error())
 			return
 		}
 	}

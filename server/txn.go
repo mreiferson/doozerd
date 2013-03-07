@@ -4,8 +4,8 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 	"github.com/ha/doozerd/consensus"
 	"github.com/ha/doozerd/store"
+	"github.com/mreiferson/go-simplelog"
 	"io"
-	"log"
 	"sort"
 	"syscall"
 )
@@ -343,7 +343,7 @@ func (t *txn) respond() {
 	t.resp.Tag = t.req.Tag
 	err := t.c.write(&t.resp)
 	if err != nil && err != io.EOF {
-		log.Println(err)
+		simplelog.Error(err.Error())
 	}
 }
 
